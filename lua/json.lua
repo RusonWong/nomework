@@ -7,7 +7,7 @@ function getlen(tbl)
 	return len
 end
 
-function locate( j_str, cur_pos)
+function skip_whitespace( j_str, cur_pos)
 	local s,e = string.find(j_str, "%S", cur_pos)
 	return s
 end
@@ -27,7 +27,7 @@ function marshal_str( j_str, pos_s)
 
 	ret_str = string.sub(j_str,pos_s+1,rq_pos_s-1)
 	end_pos = rq_pos_s
-	print("marshal_str:"..ret_str..","..end_pos)
+	--print("marshal_str:"..ret_str..","..end_pos)
 	return ret_str,end_pos
 end
 
@@ -40,10 +40,10 @@ function marshal_arr(j_str, pos_s)
 	while true do
 		local value
 
-		cur_pos = locate(j_str, cur_pos)
+		cur_pos = skip_whitespace(j_str, cur_pos)
 		value, cur_pos = marshal_value(j_str, cur_pos)
 
-		cur_pos = locate(j_str, cur_pos + 1)
+		cur_pos = skip_whitespace(j_str, cur_pos + 1)
 
 		local char = string.sub(j_str, cur_pos, cur_pos)
 
@@ -71,7 +71,7 @@ function marshal_obj(j_str, pos_s)
 		local key,value
 
 		---strip blank
-		cur_pos = locate(j_str, cur_pos)
+		cur_pos = skip_whitespace(j_str, cur_pos)
 
 		local char = string.sub(j_str,cur_pos, cur_pos)
 		if char == "\"" then
@@ -82,7 +82,7 @@ function marshal_obj(j_str, pos_s)
 		end
 
 		---strip blank
-		cur_pos = locate(j_str, cur_pos + 1)
+		cur_pos = skip_whitespace(j_str, cur_pos + 1)
 
 		--read ":"
 		char = string.sub(j_str, cur_pos, cur_pos)
@@ -92,10 +92,10 @@ function marshal_obj(j_str, pos_s)
 		end
 
 		---strip whitespace
-		cur_pos = locate(j_str, cur_pos + 1)
+		cur_pos = skip_whitespace(j_str, cur_pos + 1)
 
 		value, cur_pos = marshal_value(j_str, cur_pos)
-		print("marshal_value return",value,cur_pos)
+		--print("marshal_value return",value,cur_pos)
 		if value == nil then
 			break
 		end
@@ -104,7 +104,7 @@ function marshal_obj(j_str, pos_s)
 		tbl[key] = value
 
 		---strip blank
-		cur_pos = locate(j_str, cur_pos + 1)
+		cur_pos = skip_whitespace(j_str, cur_pos + 1)
 
 		char = string.sub(j_str, cur_pos,cur_pos)
 
@@ -190,6 +190,8 @@ function unmarshal_v(v)
 		v_str = "\""..v.."\""
 	elseif type(v) == "table" then
 		v_str = unmarshal_table(v)
+	elseif v == nil then
+		v_str = "null"
 	else
 		v_str = tostring(v)
 	end
@@ -199,29 +201,40 @@ end
 
 
 
-function unmarshal_as_array(tbl)
+function unmarshal_as_array(tbl, max_idx)
 	local j_str = "["
-	local idx = 1
-	for k,v in pairs(tbl) do
-		local v_str = unmarshal_v(v)
-		
+
+	local i = 0
+	print("max idx ==", max_idx)
+	for i = 1, max_idx do
+		local v_str = unmarshal_v(tbl[i])
+
 		j_str = j_str .. v_str
-		if idx ~= getlen(tbl) then
-			j_str = j_str..","
+
+		if i ~= max_idx then
+			j_str = j_str .. ","
 		end
-		idx = idx + 1
 	end
 
 	j_str = j_str .. "]"
-
 	return j_str
 end
 
 function unmarshal_as_map(tbl)
 	local j_str = "{"
 	local idx = 1
+	local keys = {}
+
 	for k,v in pairs(tbl) do
 		local k_str = "\""..k.."\":"
+		
+		if keys[k_str] == nil then
+			keys[k_str] = k_str
+		else
+			error("key \""..k.."\" already exists")
+			break
+		end
+		
 		local v_str = unmarshal_v(v)
 
 		j_str = j_str..k_str..v_str
@@ -239,17 +252,22 @@ function unmarshal_table(tbl)
 	local j_str = ""
 	--check keys to see if there exists any non-number keys
 	local non_num_key_found = false
+	local max_idx = 0
 	for k,v in pairs(tbl) do
 		if type(k) ~= "number" then
 			non_num_key_found = true
 			break
 		end
+
+		if max_idx < k then
+			max_idx = k
+		end
 	end
 
-	if non_num_key_found then
+	if non_num_key_found or getlen(tbl) == 0 then
 		return unmarshal_as_map(tbl)
 	else
-		return unmarshal_as_array(tbl)
+		return unmarshal_as_array(tbl, max_idx)
 	end
 end
 --------------------------------------unmarshal functions end---------------------------------

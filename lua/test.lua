@@ -26,18 +26,19 @@ end
 
 ----[[local test_result1 = json.Marshal('{"a":1}')
 --
-local tbl = { b ="cd",3,9, c = {1,2,[3] = {a=1,b=true}}}--{[2]=1,[4]=1}
+local tbl = {[2]=1,[4]=1}--{[2]=1,[4]=1}
 local test_result2 = json.Unmarshal(tbl)
 print(test_result2)
 
-
+--[[
 j_str = 
 '{"name":\n  "wangchun","gender": "M" , "books" : [ "book1" , {"name": 123 ,"age":"sss"} , "book2","2"], "educated": false}'
 
 local test_result = json.Marshal(j_str)
 
-print(print_tbl(test_result))
+print_tbl(test_result)
 
 test_result2 = json.Unmarshal(test_result)
 
 print(test_result2)
+]]
