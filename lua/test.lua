@@ -26,7 +26,7 @@ end
 
 ----[[local test_result1 = json.Marshal('{"a":1}')
 --
-local tbl = {[2]=1,[4]=1}--{[2]=1,[4]=1}
+local tbl = {1,2;a=3}--{[2]=1,[4]=1}
 local test_result2 = json.Unmarshal(tbl)
 print(test_result2)
 
