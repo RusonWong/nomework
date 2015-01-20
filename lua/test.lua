@@ -22,17 +22,21 @@ function print_tbl(tbl)
 	print(tbl2str(tbl,1))
 end
 
-local tbl = {1,2;a=3}--{[2]=1,[4]=1}
+local tbl = {1,2;a=3}
 local test_result2 = json.Unmarshal(tbl)
 print(test_result2)
 
 
-j_str = '{"name":\n  "wangchun","gender": "M" , "books" : [ "book1" , {"name": 123 ,"age":"sss"} , "book2","2"], "educated": false    }'
+j_str = '{"name":\n  "wangchun","gender": "M" , "books" : [ "book1" , {"name": 123 ,"age":"sss"} , "book2","2"], "educated": false}'
 
-local test_result = json.Marshal(j_str)
+local test_result, msg = json.Marshal(j_str)
 
-print_tbl(test_result)
+if test_result == nil then
+	print(msg)
+else
+	print_tbl(test_result)
 
-test_result2 = json.Unmarshal(test_result)
+	test_result2 = json.Unmarshal(test_result)
 
-print(test_result2)
+	print(test_result2)
+end

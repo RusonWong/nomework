@@ -21,7 +21,7 @@ function marshal_str( j_str, pos_s)
 	--find right quote
 	local rq_pos_s, rq_pos_e = string.find(j_str,"\"", pos_s + 1)
 	if rq_pos_s == nil then
-		error("can not find the right quote from pos "..(pos_s + 1))
+		--error("can not find the right quote from pos "..(pos_s + 1))
 		return nil,("can not find the right quote from pos "..(pos_s + 1))
 	end
 
@@ -43,9 +43,18 @@ function marshal_arr(j_str, pos_s)
 		cur_pos = skip_whitespace(j_str, cur_pos)
 		value, cur_pos = marshal_value(j_str, cur_pos)
 
+		if value == nil and type(cur_pos) == "string" then
+			return nil, cur_pos
+		end
+
 		table.insert(tbl, value)
 
 		cur_pos = skip_whitespace(j_str, cur_pos + 1)
+
+		if cur_pos == nil then 
+			return nil, ("\",\" or \"]\" expected at pos "..cur_pos)
+		end
+
 		local char = string.sub(j_str, cur_pos, cur_pos)
 		if char == "]" then
 			break
@@ -72,9 +81,14 @@ function marshal_obj(j_str, pos_s)
 		local char = string.sub(j_str,cur_pos, cur_pos)
 		if char == "\"" then
 			key, cur_pos = marshal_str(j_str, cur_pos)
+
+			if key == nil and type(cur_pos) == "string" then
+			return nil, cur_pos
+		end
+
 		else
-			error("error at "..(cur_pos).."\"\"\" expected")
-			break
+			--error("error at "..(cur_pos).."\"\"\" expected")
+			return nil,("error at "..(cur_pos).."\"\"\" expected")
 		end
 
 		---strip blank
@@ -83,7 +97,7 @@ function marshal_obj(j_str, pos_s)
 		--read ":"
 		char = string.sub(j_str, cur_pos, cur_pos)
 		if char ~= ":" then
-			error("error in pos "..(cur_pos)..", \":\" expected")
+			--error("error in pos "..(cur_pos)..", \":\" expected")
 			return nil,("error in pos "..(cur_pos)..", \":\" expected")
 		end
 
@@ -91,9 +105,9 @@ function marshal_obj(j_str, pos_s)
 		cur_pos = skip_whitespace(j_str, cur_pos + 1)
 
 		value, cur_pos = marshal_value(j_str, cur_pos)
-		--print("marshal_value return",value,cur_pos)
-		if value == nil then
-			break
+
+		if value == nil and type(cur_pos) == "string" then
+			return nil, cur_pos
 		end
 
 		--got key,value--
@@ -103,7 +117,7 @@ function marshal_obj(j_str, pos_s)
 		cur_pos = skip_whitespace(j_str, cur_pos + 1)
 
 		if cur_pos == nil then 
-			error("uncompleted json string")
+			--error("uncompleted json string")
 			return nil, ("uncompleted json string")
 		end
 
@@ -114,7 +128,7 @@ function marshal_obj(j_str, pos_s)
 		elseif char == "," then
 			cur_pos = cur_pos + 1
 		else
-			error("unexpected token found at "..cur_pos)
+			--error("unexpected token found at "..cur_pos)
 			return nil, ("unexpected token found at "..cur_pos)
 		end
 	end
@@ -133,19 +147,29 @@ function marshal_value(j_str, pos)
 	--string
 	if char == "\"" then
 		value, cur_pos = marshal_str(j_str, cur_pos)
+
+		if value == nil and type(cur_pos) == "string" then
+			return value, cur_pos
+		end
 	--object
 	elseif char == "{" then
 		value, cur_pos = marshal_obj(j_str, cur_pos)
+		if value == nil and type(cur_pos) == "string" then
+			return nil, cur_pos
+		end
 	--array
 	elseif char == "[" then
 		value, cur_pos = marshal_arr(j_str, cur_pos)
+		if value == nil and type(cur_pos) == "string" then
+			return nil, cur_pos
+		end
 	--true
 	elseif char == "t" then
 		if string.sub(j_str, cur_pos, cur_pos + 3) == "true" then
 			value = true
 			cur_pos = cur_pos + 3
 		else
-			error("unexpected token found at "..cur_pos)
+			--error("unexpected token found at "..cur_pos)
 			return nil,("unexpected token found at "..cur_pos)
 		end
 	--false
@@ -154,7 +178,8 @@ function marshal_value(j_str, pos)
 			value = false
 			cur_pos = cur_pos + 4
 		else
-			error("unexpected token found at "..cur_pos)
+			--error("unexpected token found at "..cur_pos)
+			return nil, ("unexpected token found at "..cur_pos)
 		end
 	--null
 	elseif char == "n" then
@@ -162,13 +187,14 @@ function marshal_value(j_str, pos)
 			value = nil
 			cur_pos = cur_pos + 3
 		else
-			error("unexpected token found at "..cur_pos)
+			--error("unexpected token found at "..cur_pos)
+			return nil, ("unexpected token found at "..cur_pos)
 		end
 	else
 		local s,e = string.find(j_str, "%d+", cur_pos)
 		if s == nil or s ~= cur_pos then
-			error("unexpected token found at "..cur_pos)
-			return	nil
+			--error("unexpected token found at "..cur_pos)
+			return nil, ("unexpected token found at "..cur_pos)
 		else
 			local num_str = string.sub(j_str, s, e)
 			value = tonumber(num_str)
@@ -283,7 +309,7 @@ JP.desc =  function(a,b)
 
 JP.Marshal = function(json_str)
 	local tbl,pos = marshal_obj(json_str,1)
-	return tbl
+	return tbl,pos
 end
 
 JP.Unmarshal = function( lt )
