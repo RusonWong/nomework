@@ -89,7 +89,6 @@ class PyLuaTblParser:
 		return value, cur_pos
 
 
-
 	def __next_tbl_item(self, s, pos):
 		##print("next_tbl_item" + str(pos))
 		cur_pos = pos

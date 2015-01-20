@@ -22,7 +22,7 @@ function marshal_str( j_str, pos_s)
 	local rq_pos_s, rq_pos_e = string.find(j_str,"\"", pos_s + 1)
 	if rq_pos_s == nil then
 		error("can not find the right quote from pos "..(pos_s + 1))
-		return nil
+		return nil,("can not find the right quote from pos "..(pos_s + 1))
 	end
 
 	ret_str = string.sub(j_str,pos_s+1,rq_pos_s-1)
@@ -43,12 +43,10 @@ function marshal_arr(j_str, pos_s)
 		cur_pos = skip_whitespace(j_str, cur_pos)
 		value, cur_pos = marshal_value(j_str, cur_pos)
 
-		cur_pos = skip_whitespace(j_str, cur_pos + 1)
-
-		local char = string.sub(j_str, cur_pos, cur_pos)
-
 		table.insert(tbl, value)
 
+		cur_pos = skip_whitespace(j_str, cur_pos + 1)
+		local char = string.sub(j_str, cur_pos, cur_pos)
 		if char == "]" then
 			break
 		elseif char == "," then
@@ -63,11 +61,9 @@ function marshal_obj(j_str, pos_s)
 	local tbl = {}
 	
 	local init_state = "marshal_key"
-	--skip "{"
-	local finished = false
-
+	--skip "{""
 	local cur_pos = pos_s + 1
-	while not finished do
+	while true do
 		local key,value
 
 		---strip blank
@@ -88,7 +84,7 @@ function marshal_obj(j_str, pos_s)
 		char = string.sub(j_str, cur_pos, cur_pos)
 		if char ~= ":" then
 			error("error in pos "..(cur_pos)..", \":\" expected")
-			break
+			return nil,("error in pos "..(cur_pos)..", \":\" expected")
 		end
 
 		---strip whitespace
@@ -106,15 +102,20 @@ function marshal_obj(j_str, pos_s)
 		---strip blank
 		cur_pos = skip_whitespace(j_str, cur_pos + 1)
 
+		if cur_pos == nil then 
+			error("uncompleted json string")
+			return nil, ("uncompleted json string")
+		end
+
 		char = string.sub(j_str, cur_pos,cur_pos)
 
 		if char == "}" then
-			finished = true
+			break
 		elseif char == "," then
 			cur_pos = cur_pos + 1
 		else
 			error("unexpected token found at "..cur_pos)
-			finished = true
+			return nil, ("unexpected token found at "..cur_pos)
 		end
 	end
 
@@ -145,11 +146,11 @@ function marshal_value(j_str, pos)
 			cur_pos = cur_pos + 3
 		else
 			error("unexpected token found at "..cur_pos)
+			return nil,("unexpected token found at "..cur_pos)
 		end
 	--false
 	elseif char == "f" then
 		if string.sub(j_str, cur_pos, cur_pos + 4) == "false" then
-			print("got value false",cur_pos,value)
 			value = false
 			cur_pos = cur_pos + 4
 		else
@@ -205,7 +206,6 @@ function unmarshal_as_array(tbl, max_idx)
 	local j_str = "["
 
 	local i = 0
-	print("max idx ==", max_idx)
 	for i = 1, max_idx do
 		local v_str = unmarshal_v(tbl[i])
 
@@ -282,7 +282,6 @@ JP.desc =  function(a,b)
 	end
 
 JP.Marshal = function(json_str)
-	print("string is", json_str)
 	local tbl,pos = marshal_obj(json_str,1)
 	return tbl
 end
