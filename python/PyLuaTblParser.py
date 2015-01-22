@@ -23,12 +23,13 @@ class PyLuaTblParser:
 				return ch, cur_pos
 		return "", len(s)
 
+	#从s的pos位置开始解析一个数字
 	def __start_digit(self, s, pos):
 		##print("start digit")
 		cur_pos = pos
 		isfloat = False
 		while True:
-			if s[cur_pos].isdigit():
+			if s[cur_pos].isdigit() or s[cur_pos] == "-":
 				cur_pos = cur_pos + 1
 			elif s[cur_pos] == ".":
 				cur_pos = cur_pos + 1
@@ -45,6 +46,7 @@ class PyLuaTblParser:
 			v = string.atoi(num_str)
 		return v, cur_pos
 
+	#从s的pos位置开始解析一个字符串
 	def __start_alpha(self, s, pos):
 		##print("start_alpha" + str(pos))
 		cur_pos = pos
@@ -58,6 +60,7 @@ class PyLuaTblParser:
 		##print v,cur_pos
 		return v, cur_pos
 
+	#从s的pos位置开始解析引号中内容
 	def __start_quote(self, s, pos):
 		##print("start quote")
 		cur_pos = pos + 1
@@ -69,13 +72,14 @@ class PyLuaTblParser:
 		v = s[pos+1:cur_pos]
 		return v, cur_pos
 
+	#从s的pos位置开始解析方括号中内容
 	def __start_square(self, s, pos):
 		##print("start_square")
 		value = None
 		ch, cur_pos = self.__skip_whitespace(s, pos + 1)
 		if ch == "\"":
 			value, cur_pos = self.__start_quote(s, cur_pos)
-		elif ch.isdigit():
+		elif ch.isdigit() or ch == "-":
 			value, cur_pos = self.__start_digit(s, cur_pos)
 		else:
 			self.__raise_exception("error at pos " + str(cur_pos) + ", string or num expected")
@@ -96,7 +100,7 @@ class PyLuaTblParser:
 		value = None
 		ch = s[cur_pos]
 
-		if ch.isdigit():
+		if ch.isdigit() or ch == "-":
 			value, cur_pos = self.__start_digit(s, cur_pos)
 		elif ch.isalpha():
 			v, cur_pos = self.__start_alpha(s, cur_pos)
@@ -140,7 +144,7 @@ class PyLuaTblParser:
 		ch = s[cur_pos]
 		if ch == "{":
 			value, cur_pos = self.__parse_tbl(s, cur_pos)
-		elif ch.isdigit():
+		elif ch.isdigit() or ch == "-":
 			value, cur_pos = self.__start_digit(s, cur_pos)
 		elif ch.isalpha():
 			value, cur_pos = self.__start_alpha(s, cur_pos)
@@ -262,10 +266,25 @@ class PyLuaTblParser:
 
 			if type(v) == dict:
 				vr = self.__cp_dict(v)
+			elif type(v) == list:
+				vr = self.__cp_list(v)
 
 			dr[kr] = vr
 
 		return dr
+
+	def __cp_list(self, l):
+		lr = []
+		for v in l:
+			vr = v
+			if type(v) == dict:
+				vr = self.__cp_dict(v)
+			elif type(v) == list:
+				vr = self.__cp_list(v)
+			lr.append(vr)
+		return lr
+
+
 	###############################for load dict end###################################
 
 

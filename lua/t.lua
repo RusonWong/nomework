@@ -1,3 +1,13 @@
+print(type(false))
+
+function getlen(tbl)
+	local len = 0
+	for k,v in pairs(tbl) do
+		len = len + 1
+	end
+	return len
+end
+
 function tbl2str(tbl, level)
 	local prefix = string.rep("---", level)
 	local msg = ""
@@ -18,6 +28,6 @@ function print_tbl(tbl)
 	print(tbl2str(tbl,1))
 end
 
-tbl = {array = {65;23,5,};dict = {mixed = {43,54.33,false,9,string = "value",},array = {3,6,4,},string = "value",},}
-
-print_tbl(tbl)
+t = {[1] = 2;[2] = 2;[3] = -3,[4] = nil}
+print(getlen(t))
+print_tbl(t)

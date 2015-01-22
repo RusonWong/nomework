@@ -22,21 +22,35 @@ function print_tbl(tbl)
 	print(tbl2str(tbl,1))
 end
 
-local tbl = {1,2;a=3}
+local tbl = {["hello"]=1,[{1,2,3}]="hello"}
+print(getlen(tbl))
 local test_result2 = json.Unmarshal(tbl)
 print(test_result2)
 
+--[[
 
-j_str = '{"name":\n  "wangchun","gender": "M" , "books" : [ "book1" , {"name": 123 ,"age":"sss"} , "book2","2"], "educated": false}'
+j_strs = {
+'{"n;\\\\a\\tme":"wang\\u6211nch\\\""}'
+}
 
-local test_result, msg = json.Marshal(j_str)
 
-if test_result == nil then
-	print(msg)
-else
-	print_tbl(test_result)
+for k,j_str in pairs(j_strs) do
+	print(j_str)
 
-	test_result2 = json.Unmarshal(test_result)
+	local test_result, msg = json.Marshal(j_str)
 
-	print(test_result2)
+	if test_result == nil then
+		print(msg)
+	else
+		if type(test_result) == "table" then
+			print_tbl(test_result)
+		else
+			print(test_result)
+		end
+
+		test_result2 = json.Unmarshal(test_result)
+
+		print(test_result2)
+	end
 end
+]]
