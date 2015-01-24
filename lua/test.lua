@@ -22,12 +22,13 @@ function print_tbl(tbl)
 	print(tbl2str(tbl,1))
 end
 
-local tbl = {["hello"]=1,[{1,2,3}]="hello"}
+local tbl = {[2] = 2,[4] =1}
 print(getlen(tbl))
 local test_result2 = json.Unmarshal(tbl)
 print(test_result2)
 
---[[
+
+
 
 j_strs = {
 '{"n;\\\\a\\tme":"wang\\u6211nch\\\""}'
@@ -53,4 +54,3 @@ for k,j_str in pairs(j_strs) do
 		print(test_result2)
 	end
 end
-]]

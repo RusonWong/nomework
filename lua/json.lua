@@ -1,10 +1,13 @@
 
 function getlen(tbl)
-	local len = 0
+	return #tbl
+end
+
+function isempty(tbl)
 	for k,v in pairs(tbl) do
-		len = len + 1
+		return false
 	end
-	return len
+	return true
 end
 
 function skip_whitespace( j_str, cur_pos)
@@ -43,14 +46,11 @@ local function unicode2utf8(us)
 	local uvs = string.sub(us, 3, 6)
 	local uv = tonumber("0x"..uvs)
 	local hexx = hex2bin(uvs)
-	print(hexx)
 	if uv > 0x0800 and uv < 0xffff then
 		local templete = "11110xxx10xxxxxx10xxxxxx10xxxxxx"
 		local utf8_b = "1110"..string.sub(hexx,1,4).."10"..string.sub(hexx,5,10).."10"..string.sub(hexx,11,16)
-		print(utf8_b)
 
 		local utf8_h = bin2hex(utf8_b)
-		print(utf8_h)
 		local b1 = tonumber("0x"..string.sub(utf8_h,1,2))
 		local b2 = tonumber("0x"..string.sub(utf8_h,3,4))
 		local b3 = tonumber("0x"..string.sub(utf8_h,5,6))
@@ -290,10 +290,10 @@ function marshal_value(j_str, pos)
 		end
 	else
 		--hex
-		local s,e = string.find(j_str, "0x[0-9a-f]+", cur_pos)
+		local s,e = string.find(j_str, "^0x[0-9a-f]+", cur_pos)
 		--decimal
 		if s == nil or s ~= cur_pos then
-			s,e = string.find(j_str, "[%+%-]?%d+%.?%d*[Ee]?[%+%-]?%d*", cur_pos)
+			s,e = string.find(j_str, "^[%+%-]?%d+%.?%d*[Ee]?[%+%-]?%d*", cur_pos)
 		end
 
 		if s == nil or s ~= cur_pos then
@@ -324,8 +324,7 @@ function escape_str(str)
 	ret_str = string.gsub(ret_str,"\n","\\n")
 	ret_str = string.gsub(ret_str,"\r","\\r")
 	ret_str = string.gsub(ret_str,"\t","\\t")
-
-
+	
 	return ret_str
 end
 
@@ -348,10 +347,11 @@ function unmarshal_v(v)
 	return v_str
 end
 
+
 function unmarshal_k(v)
 	local v_str = ""
 	if type(v) == "number" then
-		v_str = ""..v
+		v_str = "\""..v.."\""
 	elseif type(v) == "string" then
 		v_str = "\""..escape_str(v).."\""
 	else
@@ -362,53 +362,58 @@ function unmarshal_k(v)
 end
 
 function unmarshal_as_array(tbl, max_idx)
-	local j_str = "["
+	local j_str_tbl = {"["}
 
 	local i = 0
 	for i = 1, max_idx do
 		local v_str = unmarshal_v(tbl[i])
 
-		j_str = j_str .. v_str
-
 		if i ~= max_idx then
-			j_str = j_str .. ","
+			j_str_tbl[#j_str_tbl + 1] = v_str
+			j_str_tbl[#j_str_tbl + 1] = ","
+
+		else
+			j_str_tbl[#j_str_tbl + 1] = v_str
 		end
 	end
 
-	j_str = j_str .. "]"
-	return j_str
+	j_str_tbl[#j_str_tbl + 1] = "]"
+	local rt = table.concat(j_str_tbl)
+	return rt
 end
 
 function unmarshal_as_map(tbl)
-	local j_str = "{"
-	local keys = {}
+	--print("unmarshal_as_map start at",os.clock())
+	local j_str_tbl = {"{"}
 
 	for k,v in pairs(tbl) do
 		local k_str = unmarshal_k(k)
 		local v_str = unmarshal_v(v)
-
+		local keys = {}
 		if k_str ~= nil and v_str ~= nil then
+			
 			if keys[k_str] == nil then
 				keys[k_str] = k_str
 			else
 				error("key \""..k.."\" already exists")
 				break
 			end
-			
-			local kv_str = k_str..":"..v_str
-			if getlen(keys) ~= 1 then
-				kv_str = "," .. kv_str
+
+			if #j_str_tbl ~= 1 then
+				j_str_tbl[#j_str_tbl+1] = ","
 			end
-			j_str = j_str..kv_str
+			j_str_tbl[#j_str_tbl+1] = k_str
+			j_str_tbl[#j_str_tbl+1] = ":"
+			j_str_tbl[#j_str_tbl+1] = v_str
 		end
 	end
-	j_str = j_str.."}"
-	return j_str
+	j_str_tbl[#j_str_tbl+1] = "}"
+	local rt = table.concat(j_str_tbl)
+	return rt
 end
 
 
 function unmarshal_table(tbl)
-	local j_str = ""
 	--check keys to see if there exists any non-number keys
 	local non_num_key_found = false
 	local max_idx = 0
@@ -422,11 +427,12 @@ function unmarshal_table(tbl)
 			max_idx = k
 		end
 	end
-
-	if non_num_key_found or getlen(tbl) == 0 then
-		return unmarshal_as_map(tbl)
+	if non_num_key_found or isempty(tbl) then
+		local rt2 = unmarshal_as_map(tbl)
+		return rt2
 	else
-		return unmarshal_as_array(tbl, max_idx)
+		local rt = unmarshal_as_array(tbl, max_idx)
+		return rt
 	end
 end
 --------------------------------------unmarshal functions end---------------------------------
